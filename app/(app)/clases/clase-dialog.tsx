@@ -30,8 +30,8 @@ export function ClaseDialog({
   salones,
 }: {
   clase?: Clase
-  profesores: Profesor[]
-  salones: Salon[]
+  profesores: Pick<Profesor, "id" | "nombre">[]
+  salones: Pick<Salon, "id" | "nombre">[]
 }) {
   const [open, setOpen] = useState(false)
   const [profesorId, setProfesorId] = useState(clase?.profesor_id ?? "none")
@@ -113,7 +113,14 @@ export function ClaseDialog({
             </div>
             <div className="grid gap-2">
               <Label>Profesor</Label>
-              <Select value={profesorId} onValueChange={setProfesorId}>
+              <Select
+                value={profesorId}
+                onValueChange={(v) => setProfesorId(v ?? "none")}
+                items={{
+                  none: "Sin asignar",
+                  ...Object.fromEntries(profesores.map((p) => [p.id, p.nombre])),
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Sin asignar" />
                 </SelectTrigger>
@@ -129,7 +136,14 @@ export function ClaseDialog({
             </div>
             <div className="grid gap-2">
               <Label>Salón</Label>
-              <Select value={salonId} onValueChange={setSalonId}>
+              <Select
+                value={salonId}
+                onValueChange={(v) => setSalonId(v ?? "none")}
+                items={{
+                  none: "Sin asignar",
+                  ...Object.fromEntries(salones.map((s) => [s.id, s.nombre])),
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Sin asignar" />
                 </SelectTrigger>

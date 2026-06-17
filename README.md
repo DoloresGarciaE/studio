@@ -5,63 +5,97 @@
 > liquidás lo que te deben los profes que dan clase en tu espacio — desde el celu
 > o la compu.
 
-Este repo arranca con la **parte inicial generada en [v0](https://v0.app)** más
-la documentación de producto, diseño e implementación del MVP.
-
 ## Estado actual
 
-⚠️ **Scaffold inicial, todavía no compila.** Es el primer volcado de v0: sirve
-como base, pero le faltan piezas para correr (ver "Pendientes").
+✅ **Scaffold funcional: compila y corre.** Punto de partida sobre la base inicial
+generada en [v0](https://v0.app), completada y conectada a Supabase.
 
-Lo que ya está generado:
+Ya funciona:
 
-- Proyecto **Next.js 16 (App Router) + React 19 + TypeScript + Tailwind v4**.
-- **shadcn/ui** (estilo `base-nova`, primitivas `@base-ui/react`) — por ahora
-  solo el componente `Button`.
-- Tres ABMs de dominio bajo `app/(app)/`, cada uno con su página, sus
-  *server actions* y su diálogo de alta/edición:
-  - **Alumnos** (`alumnos/`)
-  - **Clases** (`clases/`)
-  - **Profesores** (`profesores/`)
-- Acceso a datos vía **Supabase**, con *scoping* multi-tenant por `studio_id`
-  en cada query.
+- **Auth** con Supabase (registro / login). Cada usuario obtiene su propio estudio.
+- **Multi-tenant** por `studio_id` en cada query, reforzado con RLS en Postgres.
+- ABMs de **Alumnos**, **Clases** y **Profesores** (crear / editar / eliminar).
+- Layout con sidebar, paleta ciruela/ámbar y toasts.
 
-## Pendientes para que compile y corra
+Todavía no (roadmap del MVP):
 
-El scaffold importa módulos y dependencias que v0 todavía no exportó:
+- Inscripciones, generación de **cuotas**, **pagos** y estados.
+- **Recibos** PDF, **dashboard** de totales, **recordatorios** `wa.me`.
+- Horarios estructurados (Actividad + Horario + conflictos de sala). Hoy una clase
+  guarda `dia_horario` como texto y un único salón/profe.
 
-- **Componentes UI faltantes:** `input`, `label`, `dialog`, `select`, `table`,
-  `card`, `badge`, `avatar` (shadcn), más `page-header`, `empty-state` y
-  `delete-button`.
-- **Helpers de `lib/` faltantes:** `lib/supabase/server` (cliente Supabase),
-  `lib/studio` (`requireStudio()`), `lib/types` y `lib/format`
-  (`initials`, `formatCurrency`).
-- **Dependencias sin instalar:** `sonner` (toasts) y el cliente de Supabase
-  (`@supabase/supabase-js`, `@supabase/ssr`).
-- **Schema de base de datos** (tablas `alumnos`, `clases`, `profesores`,
-  `salones`, etc.) y variables de entorno de Supabase.
+## Stack
 
-> Nota: el código usa **Supabase**, mientras que el plan de implementación
-> (`docs/cobralia-plan-implementacion.md`) propone **Prisma + Postgres**. Hay que
-> decidir con cuál seguir antes de completar el MVP.
+- **Next.js 16** (App Router) + **React 19** + **TypeScript**
+- **Tailwind v4** + **shadcn/ui** (estilo `base-nova`, primitivas `@base-ui/react`)
+- **Supabase** (Postgres + Auth) vía `@supabase/ssr`
+- **sonner** para toasts
+
+## Puesta en marcha
+
+```bash
+pnpm install
+```
+
+1. Creá un proyecto en [Supabase](https://supabase.com).
+2. Copiá `.env.example` a `.env.local` y completá con la URL y la anon key
+   (Supabase → Project Settings → API):
+
+   ```bash
+   NEXT_PUBLIC_SUPABASE_URL=...
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+   ```
+
+3. En el **SQL Editor** de Supabase, ejecutá [`supabase/schema.sql`](./supabase/schema.sql).
+   Crea las tablas, las policies de RLS y el trigger que arma un estudio al registrarse.
+4. _(Para probar en dev)_ En Supabase → **Authentication → Sign In / Providers → Email**,
+   desactivá "Confirm email" para entrar sin confirmar el mail (o confirmalo).
+5. Levantá la app:
+
+   ```bash
+   pnpm dev
+   ```
+
+   Abrí `http://localhost:3000`, entrá a `/login` y creá tu estudio.
+
+## Cómo funciona el multi-tenant
+
+- Al registrarse, un trigger (`handle_new_user`) crea un `Studio` y deja al usuario
+  como `OWNER` en `studio_members`.
+- `lib/studio.ts → requireStudio()` toma el estudio **de la sesión** (nunca del cliente).
+- Cada lectura/escritura filtra por `studio_id`; las **policies de RLS** lo refuerzan
+  a nivel base de datos.
+- `proxy.ts` protege las rutas: sin sesión, redirige a `/login`.
+
+## Estructura
+
+```text
+app/
+  (app)/                 # rutas privadas (layout con sidebar)
+    alumnos/ clases/ profesores/
+  login/                 # registro / ingreso
+components/
+  ui/                    # primitivos shadcn (base-nova)
+  page-header, empty-state, delete-button, sidebar-nav
+lib/
+  supabase/{server,client,middleware}.ts
+  studio.ts  types.ts  format.ts
+supabase/schema.sql      # tablas + RLS + onboarding
+proxy.ts                 # protección de rutas
+docs/                    # producto, implementación, UI, colores
+```
 
 ## Documentación
 
-La visión completa del producto y el plan técnico están en [`docs/`](./docs):
+La visión de producto y el plan técnico están en [`docs/`](./docs):
 
 | Documento | Qué cubre |
 | --- | --- |
 | [`cobralia-documento-producto.md`](./docs/cobralia-documento-producto.md) | Producto: validación, personas, dominio, alcance del MVP, roadmap. |
-| [`cobralia-plan-implementacion.md`](./docs/cobralia-plan-implementacion.md) | Stack, arquitectura, modelo de datos (Prisma), multi-tenancy, milestones. |
+| [`cobralia-plan-implementacion.md`](./docs/cobralia-plan-implementacion.md) | Stack, arquitectura, modelo de datos, multi-tenancy, milestones. |
 | [`cobralia-plan-componentes-ui.md`](./docs/cobralia-plan-componentes-ui.md) | Sistema de componentes UI, tipografía, pantallas. |
 | [`cobralia-plan-colores.md`](./docs/cobralia-plan-colores.md) | Sistema de color (ciruela/ámbar), tokens, accesibilidad. |
 
-## Desarrollo
-
-```bash
-pnpm install
-pnpm dev
-```
-
-La app queda en `http://localhost:3000` (una vez resueltos los pendientes de
-arriba).
+> Nota: el plan de implementación describe **Prisma + Postgres**; esta versión usa
+> **Supabase** (Postgres + Auth gestionados) con el mismo modelo de datos y la misma
+> regla de multi-tenancy.

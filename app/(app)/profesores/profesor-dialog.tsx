@@ -92,6 +92,7 @@ export function ProfesorDialog({ profesor }: { profesor?: Profesor }) {
               <Select
                 value={tipo}
                 onValueChange={(v) => setTipo(v as TipoProfesor)}
+                items={Object.fromEntries(tipos.map((t) => [t.value, t.label]))}
               >
                 <SelectTrigger>
                   <SelectValue />
