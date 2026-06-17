@@ -1,5 +1,5 @@
 -- Cobralia — schema base (Supabase / Postgres)
--- Ejecutar en el SQL Editor de tu proyecto Supabase.
+-- Ejecutar en el SQL Editor de tu proyecto Supabase. Es idempotente.
 --
 -- Multi-tenant: cada fila de dominio cuelga de un studio.
 -- RLS (Row Level Security) restringe el acceso a los estudios del usuario logueado.
@@ -74,6 +74,58 @@ create table if not exists public.clases (
 );
 create index if not exists clases_studio_idx on public.clases(studio_id);
 
+-- Inscripciones (alumno ↔ clase)
+create table if not exists public.inscripciones (
+  id          uuid primary key default gen_random_uuid(),
+  studio_id   uuid not null references public.studios(id) on delete cascade,
+  alumno_id   uuid not null references public.alumnos(id) on delete cascade,
+  clase_id    uuid not null references public.clases(id) on delete cascade,
+  activa      boolean not null default true,
+  created_at  timestamptz not null default now(),
+  unique (alumno_id, clase_id)
+);
+create index if not exists inscripciones_studio_idx on public.inscripciones(studio_id);
+create index if not exists inscripciones_alumno_idx on public.inscripciones(alumno_id);
+
+-- Cuotas (una por inscripción y período)
+create table if not exists public.cuotas (
+  id              uuid primary key default gen_random_uuid(),
+  studio_id       uuid not null references public.studios(id) on delete cascade,
+  inscripcion_id  uuid not null references public.inscripciones(id) on delete cascade,
+  periodo         date not null,   -- primer día del mes
+  monto           numeric(12, 2) not null,
+  vencimiento     date not null,
+  estado          text not null default 'PENDIENTE'
+                    check (estado in ('PENDIENTE', 'PAGADA', 'VENCIDA', 'PARCIAL')),
+  created_at      timestamptz not null default now(),
+  unique (inscripcion_id, periodo)
+);
+create index if not exists cuotas_studio_periodo_idx on public.cuotas(studio_id, periodo);
+create index if not exists cuotas_estado_idx on public.cuotas(studio_id, estado);
+
+-- Pagos (una cuota puede recibir varios → pago parcial)
+create table if not exists public.pagos (
+  id          uuid primary key default gen_random_uuid(),
+  studio_id   uuid not null references public.studios(id) on delete cascade,
+  cuota_id    uuid not null references public.cuotas(id) on delete cascade,
+  monto       numeric(12, 2) not null,
+  metodo      text not null default 'EFECTIVO'
+                check (metodo in ('EFECTIVO', 'TRANSFERENCIA', 'MERCADOPAGO')),
+  fecha       timestamptz not null default now(),
+  created_at  timestamptz not null default now()
+);
+create index if not exists pagos_cuota_idx on public.pagos(cuota_id);
+
+-- Recibos (uno por pago, numeración por estudio)
+create table if not exists public.recibos (
+  id          uuid primary key default gen_random_uuid(),
+  studio_id   uuid not null references public.studios(id) on delete cascade,
+  pago_id     uuid not null unique references public.pagos(id) on delete cascade,
+  numero      integer not null,
+  created_at  timestamptz not null default now()
+);
+create index if not exists recibos_studio_idx on public.recibos(studio_id);
+
 -- ──────────────────────────────────────────────────────────────────────────
 -- Helper: estudios del usuario actual (para las policies)
 -- ──────────────────────────────────────────────────────────────────────────
@@ -98,6 +150,10 @@ alter table public.salones        enable row level security;
 alter table public.profesores     enable row level security;
 alter table public.alumnos        enable row level security;
 alter table public.clases         enable row level security;
+alter table public.inscripciones  enable row level security;
+alter table public.cuotas         enable row level security;
+alter table public.pagos          enable row level security;
+alter table public.recibos        enable row level security;
 
 drop policy if exists studios_select on public.studios;
 create policy studios_select on public.studios
@@ -112,7 +168,10 @@ do $$
 declare
   t text;
 begin
-  foreach t in array array['salones', 'profesores', 'alumnos', 'clases'] loop
+  foreach t in array array[
+    'salones', 'profesores', 'alumnos', 'clases',
+    'inscripciones', 'cuotas', 'pagos', 'recibos'
+  ] loop
     execute format('drop policy if exists %1$s_all on public.%1$s;', t);
     execute format(
       'create policy %1$s_all on public.%1$s for all '

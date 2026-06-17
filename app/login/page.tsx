@@ -46,7 +46,7 @@ export default function LoginPage() {
         }
       }
 
-      router.push("/alumnos")
+      router.push("/dashboard")
       router.refresh()
     })
   }

@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import { requireStudio } from "@/lib/studio"
 import { PageHeader } from "@/components/page-header"
@@ -71,7 +72,12 @@ export default async function AlumnosPage() {
                             {initials(a.nombre)}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="font-medium">{a.nombre}</span>
+                        <Link
+                          href={`/alumnos/${a.id}`}
+                          className="font-medium hover:underline"
+                        >
+                          {a.nombre}
+                        </Link>
                       </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground">

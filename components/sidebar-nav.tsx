@@ -2,21 +2,31 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { GraduationCap, Users, UserCog } from "lucide-react"
+import {
+  DoorOpen,
+  GraduationCap,
+  LayoutDashboard,
+  Receipt,
+  Users,
+  UserCog,
+} from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
 const items = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/cuotas", label: "Cuotas", icon: Receipt },
   { href: "/alumnos", label: "Alumnos", icon: Users },
   { href: "/clases", label: "Clases", icon: GraduationCap },
   { href: "/profesores", label: "Profesores", icon: UserCog },
+  { href: "/salones", label: "Salones", icon: DoorOpen },
 ]
 
 export function SidebarNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="flex gap-1 md:flex-col">
+    <nav className="-mx-1 flex gap-1 overflow-x-auto px-1 md:flex-col md:overflow-visible">
       {items.map(({ href, label, icon: Icon }) => {
         const active = pathname === href || pathname.startsWith(href + "/")
         return (
@@ -24,7 +34,7 @@ export function SidebarNav() {
             key={href}
             href={href}
             className={cn(
-              "flex flex-1 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors md:flex-none",
+              "flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors md:shrink",
               active
                 ? "bg-sidebar-accent text-sidebar-accent-foreground"
                 : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
