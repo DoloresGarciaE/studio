@@ -31,15 +31,16 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const path = request.nextUrl.pathname
-  const isAuthRoute = path.startsWith("/login")
+  const isAuthFlow = path.startsWith("/auth")
+  const isLogin = path.startsWith("/login")
 
-  if (!user && !isAuthRoute) {
+  if (!user && !isLogin && !isAuthFlow) {
     const url = request.nextUrl.clone()
     url.pathname = "/login"
     return NextResponse.redirect(url)
   }
 
-  if (user && isAuthRoute) {
+  if (user && isLogin) {
     const url = request.nextUrl.clone()
     url.pathname = "/dashboard"
     return NextResponse.redirect(url)
