@@ -241,3 +241,39 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+-- Onboarding idempotente, llamado desde la app (no depende del trigger en
+-- auth.users, que en algunos providers/altas puede no dispararse).
+create or replace function public.ensure_studio()
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  sid uuid;
+begin
+  select studio_id into sid
+  from public.studio_members
+  where user_id = auth.uid()
+  limit 1;
+
+  if sid is not null then
+    return sid;
+  end if;
+
+  insert into public.studios (nombre)
+  values (coalesce(
+    (select nullif(raw_user_meta_data ->> 'studio_nombre', '')
+       from auth.users where id = auth.uid()),
+    'Mi estudio'
+  ))
+  returning id into sid;
+
+  insert into public.studio_members (studio_id, user_id, rol)
+  values (sid, auth.uid(), 'OWNER');
+
+  return sid;
+end $$;
+
+grant execute on function public.ensure_studio() to authenticated;
