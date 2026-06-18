@@ -21,6 +21,8 @@ Ya funciona:
 - **Recibos**: numerados por estudio, página imprimible / "Guardar como PDF".
 - **Recordatorios**: botón que arma un link `wa.me` con texto prellenado.
 - **Dashboard**: cobrado / pendiente / vencido del mes + lista de los que necesitan atención.
+- **Liquidaciones** (multi-profe): comisión sobre lo cobrado (profes a %) y alquiler
+  por horas de salón, con registro de uso de salón y "marcar saldada".
 
 ## Stack
 
@@ -56,6 +58,8 @@ pnpm install
 3. En **Cuotas**, generá las cuotas del mes.
 4. Registrá **pagos**, mandá **recordatorios** y emití **recibos** desde Cuotas o el alumno.
 5. Mirá el **Dashboard** para ver cuánto cobraste, cuánto falta y quién está vencido.
+6. _(Profes invitados)_ En **Liquidaciones**, registrá horas de salón y generá lo que
+   cada profe te debe (comisión sobre lo cobrado, o alquiler por horas).
 
 ## Cómo funciona
 
@@ -70,7 +74,7 @@ pnpm install
 ```text
 app/
   (app)/                 # privado (layout con sidebar)
-    dashboard/ cuotas/ salones/
+    dashboard/ cuotas/ liquidaciones/ salones/
     alumnos/[id]/        # detalle: inscripciones + cuotas + pagos
     clases/ profesores/
   recibos/[id]/          # recibo imprimible (fuera del shell)
@@ -98,7 +102,6 @@ docs/                    # producto, implementación, UI, colores
 
 - Horarios estructurados (Actividad + Horario + **conflictos de sala**) y agenda por salón.
   Hoy una clase guarda `dia_horario` como texto y un único salón/profe.
-- Liquidación de profes a **porcentaje / alquiler**.
 - Cobro online (Mercado Pago) y WhatsApp automático (BSP).
 - Tipografías del plan (Fraunces / Hanken / IBM Plex Mono) — hoy Geist.
 

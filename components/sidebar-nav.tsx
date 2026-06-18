@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
+  Coins,
   DoorOpen,
   GraduationCap,
   LayoutDashboard,
@@ -19,6 +20,7 @@ const items = [
   { href: "/alumnos", label: "Alumnos", icon: Users },
   { href: "/clases", label: "Clases", icon: GraduationCap },
   { href: "/profesores", label: "Profesores", icon: UserCog },
+  { href: "/liquidaciones", label: "Liquidaciones", icon: Coins },
   { href: "/salones", label: "Salones", icon: DoorOpen },
 ]
 

@@ -126,6 +126,34 @@ create table if not exists public.recibos (
 );
 create index if not exists recibos_studio_idx on public.recibos(studio_id);
 
+-- Liquidaciones (lo que el profe le debe al estudio: comisión o alquiler)
+create table if not exists public.liquidaciones (
+  id          uuid primary key default gen_random_uuid(),
+  studio_id   uuid not null references public.studios(id) on delete cascade,
+  profesor_id uuid not null references public.profesores(id) on delete cascade,
+  periodo     date not null,
+  concepto    text not null check (concepto in ('COMISION', 'ALQUILER')),
+  monto       numeric(12, 2) not null,
+  estado      text not null default 'PENDIENTE'
+                check (estado in ('PENDIENTE', 'LIQUIDADA')),
+  created_at  timestamptz not null default now(),
+  unique (profesor_id, periodo, concepto)
+);
+create index if not exists liquidaciones_studio_periodo_idx
+  on public.liquidaciones(studio_id, periodo);
+
+-- Uso de salón por hora (alimenta la liquidación por ALQUILER)
+create table if not exists public.uso_salon (
+  id          uuid primary key default gen_random_uuid(),
+  studio_id   uuid not null references public.studios(id) on delete cascade,
+  profesor_id uuid not null references public.profesores(id) on delete cascade,
+  salon_id    uuid references public.salones(id) on delete set null,
+  fecha       date not null,
+  horas       numeric(5, 2) not null,
+  created_at  timestamptz not null default now()
+);
+create index if not exists uso_salon_studio_idx on public.uso_salon(studio_id, fecha);
+
 -- ──────────────────────────────────────────────────────────────────────────
 -- Helper: estudios del usuario actual (para las policies)
 -- ──────────────────────────────────────────────────────────────────────────
@@ -154,6 +182,8 @@ alter table public.inscripciones  enable row level security;
 alter table public.cuotas         enable row level security;
 alter table public.pagos          enable row level security;
 alter table public.recibos        enable row level security;
+alter table public.liquidaciones  enable row level security;
+alter table public.uso_salon      enable row level security;
 
 drop policy if exists studios_select on public.studios;
 create policy studios_select on public.studios
@@ -170,7 +200,8 @@ declare
 begin
   foreach t in array array[
     'salones', 'profesores', 'alumnos', 'clases',
-    'inscripciones', 'cuotas', 'pagos', 'recibos'
+    'inscripciones', 'cuotas', 'pagos', 'recibos',
+    'liquidaciones', 'uso_salon'
   ] loop
     execute format('drop policy if exists %1$s_all on public.%1$s;', t);
     execute format(

@@ -89,3 +89,30 @@ export interface Recibo {
   numero: number
   created_at?: string
 }
+
+export type ConceptoLiquid = "COMISION" | "ALQUILER"
+export type EstadoLiquid = "PENDIENTE" | "LIQUIDADA"
+
+export interface Liquidacion {
+  id: string
+  studio_id: string
+  profesor_id: string
+  periodo: string
+  concepto: ConceptoLiquid
+  monto: number
+  estado: EstadoLiquid
+  created_at?: string
+  profesores?: Pick<Profesor, "id" | "nombre" | "tipo"> | null
+}
+
+export interface UsoSalon {
+  id: string
+  studio_id: string
+  profesor_id: string
+  salon_id: string | null
+  fecha: string
+  horas: number
+  created_at?: string
+  profesores?: { nombre: string } | null
+  salones?: { nombre: string } | null
+}
