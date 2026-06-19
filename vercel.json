@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "next build",
+  "crons": [
+    {
+      "path": "/api/cron/generar-cuotas",
+      "schedule": "0 6 1 * *"
+    }
+  ]
+}
