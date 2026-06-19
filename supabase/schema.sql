@@ -214,36 +214,11 @@ begin
 end $$;
 
 -- ──────────────────────────────────────────────────────────────────────────
--- Onboarding automático: al registrarse un usuario, crear su estudio + OWNER
--- El nombre del estudio viene del metadata del signup (studio_nombre).
+-- Onboarding: la app llama a ensure_studio() en el primer ingreso y crea el
+-- estudio + OWNER si no existe. A propósito NO usamos un trigger en auth.users
+-- (puede fallar o abortar el script según el provider/permisos).
 -- ──────────────────────────────────────────────────────────────────────────
 
-create or replace function public.handle_new_user()
-returns trigger
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  new_studio uuid;
-begin
-  insert into public.studios (nombre)
-  values (coalesce(nullif(new.raw_user_meta_data ->> 'studio_nombre', ''), 'Mi estudio'))
-  returning id into new_studio;
-
-  insert into public.studio_members (studio_id, user_id, rol)
-  values (new_studio, new.id, 'OWNER');
-
-  return new;
-end $$;
-
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute function public.handle_new_user();
-
--- Onboarding idempotente, llamado desde la app (no depende del trigger en
--- auth.users, que en algunos providers/altas puede no dispararse).
 create or replace function public.ensure_studio()
 returns uuid
 language plpgsql
